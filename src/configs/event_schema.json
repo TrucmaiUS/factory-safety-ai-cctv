@@ -1,0 +1,31 @@
+{
+  "event_id": "string",
+  "camera_id": "string",
+  "timestamp": "string",
+  "track_id": "string_or_integer_or_null",
+  "risk_score": "number_0_to_100",
+  "severity": "normal_warning_high_critical",
+  "signals": {
+    "person_detected": "boolean",
+    "helmet_detected": "boolean",
+    "head_detected": "boolean",
+    "inside_danger_zone": "boolean",
+    "stay_time_seconds": "number",
+    "moving_toward_zone": "boolean",
+    "person_confidence": "number_or_null",
+    "helmet_confidence": "number_or_null",
+    "no_helmet_confidence": "number_or_null"
+  },
+  "rule_triggered": "string_or_null",
+  "decision_trace": [
+    {
+      "step": "string",
+      "input": "object",
+      "output": "object",
+      "reason": "string"
+    }
+  ],
+  "actions": [
+    "string"
+  ]
+}

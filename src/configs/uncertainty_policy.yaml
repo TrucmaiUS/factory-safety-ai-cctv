@@ -1,0 +1,18 @@
+confidence_thresholds:
+  high: 0.75
+  uncertain_low: 0.40
+  uncertain_high: 0.75
+  low: 0.40
+
+policies:
+  high_confidence:
+    decision: apply_rule_normally
+
+  uncertain:
+    decision: soft_warning_or_review
+    actions:
+      - save_for_review
+      - show_low_confidence_warning
+
+  low_confidence:
+    decision: ignore_or_log_only

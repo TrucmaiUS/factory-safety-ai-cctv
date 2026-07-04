@@ -1,0 +1,52 @@
+severity_thresholds:
+  normal: [0, 30]
+  warning: [31, 60]
+  high: [61, 85]
+  critical: [86, 100]
+
+weights:
+  inside_danger_zone: 40
+  no_helmet: 30
+  stay_time_over_3s: 10
+  moving_toward_zone: 10
+  high_confidence: 10
+
+camera_rules:
+  camera_1:
+    enabled_signals:
+      - inside_danger_zone
+      - no_helmet
+      - stay_time_seconds
+      - moving_toward_zone
+      - confidence_state
+    actions:
+      high:
+        - save_history
+        - alarm_on
+        - relay_on
+      critical:
+        - save_history
+        - alarm_on
+        - relay_on
+        - buzzer_on
+
+  camera_2:
+    enabled_signals:
+      - inside_danger_zone
+      - stay_time_seconds
+      - moving_toward_zone
+      - confidence_state
+    actions:
+      high:
+        - save_history
+        - alarm_on
+        - relay_on
+
+  camera_3:
+    enabled_signals:
+      - no_helmet
+      - confidence_state
+    actions:
+      warning:
+        - save_history
+        - ui_warning

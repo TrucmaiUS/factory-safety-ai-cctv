@@ -1,0 +1,18 @@
+camera_1:
+  zone_type: polygon
+  danger_zone:
+    name: machine_area
+    points: []
+  note: polygon points are TBD and should be filled after sampling frames from cam1.mp4
+
+camera_2:
+  zone_type: polygon
+  danger_zone:
+    name: restricted_area
+    points: []
+  note: polygon points are TBD and should be filled after sampling frames from cam2.mp4
+
+camera_3:
+  zone_type: none
+  danger_zone: null
+  note: no danger zone needed for helmet-only camera

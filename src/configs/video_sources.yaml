@@ -1,0 +1,27 @@
+camera_1:
+  role: danger_zone_and_helmet
+  source: video_source/camera_1/cam1.mp4
+  required_signals:
+    - person_detected
+    - helmet_or_head_detected
+    - inside_danger_zone
+    - stay_time_seconds
+    - moving_toward_zone
+  note: person enters polygon and helmet/no-helmet status is evaluated
+
+camera_2:
+  role: danger_zone_only
+  source: video_source/camera_2/cam2.mp4
+  required_signals:
+    - person_detected
+    - inside_danger_zone
+    - moving_toward_zone
+  note: person enters or approaches restricted zone
+
+camera_3:
+  role: helmet_only
+  source: video_source/camera_3/cam3.mp4
+  required_signals:
+    - person_detected
+    - helmet_or_head_detected
+  note: helmet compliance only

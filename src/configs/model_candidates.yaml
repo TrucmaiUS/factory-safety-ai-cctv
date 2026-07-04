@@ -1,0 +1,18 @@
+models:
+  - id: yolo8s_ppe
+    base: yolov8s.pt
+    role: baseline
+    task: detection
+    reason: stable Ultralytics baseline with strong documentation
+
+  - id: yolo11s_ppe
+    base: yolo11s.pt
+    role: primary_candidate
+    task: detection
+    reason: benchmark against YOLOv8 for realtime PPE detection
+
+  - id: public_ppe_baseline
+    base: TBD
+    role: external_baseline
+    task: detection
+    reason: compare with public PPE model if license and label map are clear
