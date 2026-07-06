@@ -1,52 +1,87 @@
 severity_thresholds:
-  normal: [0, 30]
-  warning: [31, 60]
-  high: [61, 85]
-  critical: [86, 100]
+  normal: [0, 24]
+  warning: [25, 49]
+  high: [50, 79]
+  critical: [80, 100]
 
-weights:
-  inside_danger_zone: 40
-  no_helmet: 30
-  stay_time_over_3s: 10
+default_weights:
+  person_detected: 0
+  inside_danger_zone: 60
+  no_helmet: 40
+  stay_time_over_3s: 20
+  no_helmet_over_3s: 20
+  multiple_no_helmet_bonus: 20
+  combined_danger_no_helmet_bonus: 10
   moving_toward_zone: 10
-  high_confidence: 10
+  uncertain_detection_penalty: -30
+
+dwell_time:
+  danger_zone_seconds: 3.0
+  no_helmet_seconds: 3.0
 
 camera_rules:
   camera_1:
-    enabled_signals:
-      - inside_danger_zone
-      - no_helmet
-      - stay_time_seconds
-      - moving_toward_zone
-      - confidence_state
+    weights:
+      person_detected: 0
+      inside_danger_zone: 60
+      no_helmet: 40
+      stay_time_over_3s: 10
+      combined_danger_no_helmet_bonus: 10
+      uncertain_detection_penalty: -20
     actions:
+      normal: []
+      warning:
+        - save_history
+        - ui_warning
       high:
         - save_history
-        - alarm_on
-        - relay_on
-      critical:
-        - save_history
-        - alarm_on
+        - ui_warning
         - relay_on
         - buzzer_on
+      critical:
+        - save_history
+        - ui_warning
+        - relay_on
+        - buzzer_on
+        - warning_light_on
 
   camera_2:
-    enabled_signals:
-      - inside_danger_zone
-      - stay_time_seconds
-      - moving_toward_zone
-      - confidence_state
+    weights:
+      person_detected: 0
+      inside_danger_zone: 80
+      stay_time_over_3s: 20
     actions:
+      normal: []
+      warning:
+        - save_history
+        - ui_warning
       high:
         - save_history
-        - alarm_on
+        - ui_warning
         - relay_on
+        - buzzer_on
+      critical:
+        - save_history
+        - ui_warning
+        - relay_on
+        - buzzer_on
+        - warning_light_on
 
   camera_3:
-    enabled_signals:
-      - no_helmet
-      - confidence_state
+    weights:
+      person_detected: 0
+      no_helmet: 80
+      no_helmet_over_3s: 20
+      multiple_no_helmet_bonus: 20
+      uncertain_detection_penalty: -30
     actions:
+      normal: []
       warning:
+        - save_history
+        - ui_warning
+      high:
+        - save_history
+        - ui_warning
+      critical:
         - save_history
         - ui_warning

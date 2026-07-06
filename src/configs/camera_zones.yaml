@@ -1,18 +1,32 @@
 camera_1:
   zone_type: polygon
   danger_zone:
-    name: machine_area
-    points: []
-  note: polygon points are TBD and should be filled after sampling frames from cam1.mp4
+    name: right_side_restricted_edge
+    points:
+      - [2880, 560]
+      - [3840, 560]
+      - [3840, 2160]
+      - [3200, 2160]
+      - [3000, 1500]
+      - [2920, 900]
+  note: shared restricted edge zone; camera 1 uses person + PPE logic
 
 camera_2:
   zone_type: polygon
   danger_zone:
-    name: restricted_area
-    points: []
-  note: polygon points are TBD and should be filled after sampling frames from cam2.mp4
+    name: right_side_restricted_edge
+    points:
+      - [2880, 560]
+      - [3840, 560]
+      - [3840, 2160]
+      - [3200, 2160]
+      - [3000, 1500]
+      - [2920, 900]
+  note: shared restricted edge zone; camera 2 uses danger-zone intrusion logic only
 
 camera_3:
   zone_type: none
-  danger_zone: null
+  danger_zone:
+    name: null
+    points: []
   note: no danger zone needed for helmet-only camera
