@@ -1,4 +1,8 @@
 /dataset
 /docs
 
-.zip
+*.zip
+
+*.mp4
+
+*.pt
