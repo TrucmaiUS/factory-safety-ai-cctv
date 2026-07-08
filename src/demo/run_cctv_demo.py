@@ -8,6 +8,7 @@ import yaml
 from src.perception.detection_types import DetectionBox
 from src.perception.person_detector import PersonDetector
 from src.perception.ppe_detector import PPEDetector, is_head
+from src.configs.runtime_settings import pipeline_settings, tracking_settings
 from src.safety.action_engine import ActionEngine
 from src.safety.event_state_manager import EventStateManager
 from src.safety.helmet_matcher import count_unmatched_heads, match_helmet_to_person
@@ -56,11 +57,14 @@ def load_video_source(camera_id: str) -> Path:
 
 
 def camera_uses_zone(camera_id: str) -> bool:
-    return camera_id in {"camera_1", "camera_2"}
+    camera_config = load_video_sources().get(camera_id, {})
+    required = camera_config.get("required_signals", []) or []
+    return "inside_danger_zone" in required
 
 
 def camera_uses_ppe(camera_id: str) -> bool:
-    return camera_id in {"camera_1", "camera_3"}
+    camera_config = load_video_sources().get(camera_id, {})
+    return bool(camera_config.get("detectors", {}).get("ppe", False))
 
 
 def open_video_writer(output_path: Path, fps: float, width: int, height: int) -> cv2.VideoWriter:
@@ -197,20 +201,44 @@ def run_demo(
     start_sec: float = 0.0,
     end_sec: float | None = None,
     realtime_logs: bool = False,
-    snapshot_every: int = 5,
-    event_cooldown_sec: float = 2.0,
-    live_frame_width: int | None = 960,
-    inference_every: int = 1,
-    person_conf: float = 0.35,
-    ppe_conf: float = 0.25,
-    smoothing_window: int = 12,
-    no_helmet_confirm_frames: int = 6,
-    risk_alpha: float = 0.85,
-    alert_duration_sec: float = 1.5,
-    loop_video: bool = False,
+    snapshot_every: int | None = None,
+    event_cooldown_sec: float | None = None,
+    live_frame_width: int | None = None,
+    inference_every: int | None = None,
+    person_conf: float | None = None,
+    ppe_conf: float | None = None,
+    smoothing_window: int | None = None,
+    no_helmet_confirm_frames: int | None = None,
+    risk_alpha: float | None = None,
+    alert_duration_sec: float | None = None,
+    loop_video: bool | None = None,
 ) -> None:
     if camera_id not in CAMERAS:
         raise ValueError(f"Unsupported camera '{camera_id}'. Expected one of: {', '.join(CAMERAS)}")
+    runtime = pipeline_settings()
+    tracking = tracking_settings()
+    if snapshot_every is None:
+        snapshot_every = int(runtime["snapshot_every"])
+    if event_cooldown_sec is None:
+        event_cooldown_sec = float(runtime["event_cooldown_sec"])
+    if live_frame_width is None:
+        live_frame_width = runtime["live_frame_width"]
+    if inference_every is None:
+        inference_every = int(runtime["inference_every"])
+    if person_conf is None:
+        person_conf = float(runtime["person_conf"])
+    if ppe_conf is None:
+        ppe_conf = float(runtime["ppe_conf"])
+    if smoothing_window is None:
+        smoothing_window = int(runtime["smoothing_window"])
+    if no_helmet_confirm_frames is None:
+        no_helmet_confirm_frames = int(runtime["no_helmet_confirm_frames"])
+    if risk_alpha is None:
+        risk_alpha = float(runtime["risk_alpha"])
+    if alert_duration_sec is None:
+        alert_duration_sec = float(runtime["alert_duration_sec"])
+    if loop_video is None:
+        loop_video = bool(runtime["loop_video"])
 
     video_path = load_video_source(camera_id)
     cap = cv2.VideoCapture(str(video_path))
@@ -243,11 +271,21 @@ def run_demo(
     decision_manager = TrackStateManager(
         window_size=smoothing_window,
         no_helmet_confirm_frames=no_helmet_confirm_frames,
-        no_helmet_clear_frames=max(no_helmet_confirm_frames + 2, 8),
-        zone_confirm_frames=max(3, min(5, smoothing_window // 2)),
-        zone_clear_frames=max(6, min(8, smoothing_window)),
+        no_helmet_clear_frames=max(
+            no_helmet_confirm_frames + int(tracking["no_helmet_clear_extra_frames"]),
+            int(tracking["no_helmet_clear_min_frames"]),
+        ),
+        zone_confirm_frames=max(
+            int(tracking["zone_confirm_min_frames"]),
+            min(int(tracking["zone_confirm_max_frames"]), smoothing_window // 2),
+        ),
+        zone_clear_frames=max(
+            int(tracking["zone_clear_min_frames"]),
+            min(int(tracking["zone_clear_max_frames"]), smoothing_window),
+        ),
         risk_alpha=risk_alpha,
         alert_duration_seconds=alert_duration_sec,
+        stale_after_frames=int(tracking["stale_after_frames"]),
         warning_min_score=policy["warning_min_score"],
         violation_min_score=policy["violation_min_score"],
         stable_violation_min_score=policy["stable_violation_min_score"],
@@ -256,7 +294,9 @@ def run_demo(
     rule_engine = RuleEngine()
     history_logger = HistoryLogger()
     action_engine = ActionEngine(history_logger=history_logger, realtime_logs=realtime_logs)
-    event_state_manager = EventStateManager(ongoing_cooldown_seconds=max(5.0, event_cooldown_sec))
+    event_state_manager = EventStateManager(
+        ongoing_cooldown_seconds=max(float(tracking["event_ongoing_cooldown_min_sec"]), event_cooldown_sec)
+    )
     last_alert_times: dict[tuple[int | str | None, str], float] = {}
 
     writer = None
@@ -296,17 +336,32 @@ def run_demo(
                     decision_manager = TrackStateManager(
                         window_size=smoothing_window,
                         no_helmet_confirm_frames=no_helmet_confirm_frames,
-                        no_helmet_clear_frames=max(no_helmet_confirm_frames + 2, 8),
-                        zone_confirm_frames=max(3, min(5, smoothing_window // 2)),
-                        zone_clear_frames=max(6, min(8, smoothing_window)),
+                        no_helmet_clear_frames=max(
+                            no_helmet_confirm_frames + int(tracking["no_helmet_clear_extra_frames"]),
+                            int(tracking["no_helmet_clear_min_frames"]),
+                        ),
+                        zone_confirm_frames=max(
+                            int(tracking["zone_confirm_min_frames"]),
+                            min(int(tracking["zone_confirm_max_frames"]), smoothing_window // 2),
+                        ),
+                        zone_clear_frames=max(
+                            int(tracking["zone_clear_min_frames"]),
+                            min(int(tracking["zone_clear_max_frames"]), smoothing_window),
+                        ),
                         risk_alpha=risk_alpha,
                         alert_duration_seconds=alert_duration_sec,
+                        stale_after_frames=int(tracking["stale_after_frames"]),
                         warning_min_score=policy["warning_min_score"],
                         violation_min_score=policy["violation_min_score"],
                         stable_violation_min_score=policy["stable_violation_min_score"],
                         combined_violation_score=policy["combined_violation_score"],
                     )
-                    event_state_manager = EventStateManager(ongoing_cooldown_seconds=max(5.0, event_cooldown_sec))
+                    event_state_manager = EventStateManager(
+                        ongoing_cooldown_seconds=max(
+                            float(tracking["event_ongoing_cooldown_min_sec"]),
+                            event_cooldown_sec,
+                        )
+                    )
                     cached_track_risks = []
                     cached_ppe_detections = []
                     cached_frame_risks = []
@@ -522,25 +577,26 @@ def run_demo(
 
 
 def parse_args() -> argparse.Namespace:
+    defaults = pipeline_settings()
     parser = argparse.ArgumentParser(description="E2E CCTV safety demo")
     parser.add_argument("--camera", default="camera_2", help="Camera ID from video_sources.yaml")
     parser.add_argument("--all", action="store_true", help="Run all configured demo cameras")
-    parser.add_argument("--max-frames", type=int, default=None, help="Maximum frames to process")
-    parser.add_argument("--save-video", action="store_true", help="Save annotated output video")
-    parser.add_argument("--start-sec", type=float, default=0.0, help="Start time in seconds")
-    parser.add_argument("--end-sec", type=float, default=None, help="End time in seconds")
-    parser.add_argument("--realtime-logs", action="store_true", help="Write AI/device serial-style logs")
-    parser.add_argument("--snapshot-every", type=int, default=5, help="Save latest frame every N processed frames")
-    parser.add_argument("--event-cooldown-sec", type=float, default=2.0, help="Minimum seconds between repeated events")
-    parser.add_argument("--live-frame-width", type=int, default=960, help="Resize latest live frame to this width")
-    parser.add_argument("--inference-every", type=int, default=1, help="Run YOLO every N frames and reuse stable overlay between runs")
-    parser.add_argument("--person-conf", type=float, default=0.35, help="Person detector confidence threshold")
-    parser.add_argument("--ppe-conf", type=float, default=0.25, help="PPE detector confidence threshold")
-    parser.add_argument("--smoothing-window", type=int, default=12, help="Temporal voting window per tracked person")
-    parser.add_argument("--no-helmet-confirm-frames", type=int, default=6, help="Frames needed to confirm no-helmet state")
-    parser.add_argument("--risk-alpha", type=float, default=0.85, help="EMA alpha for smoothed track risk")
-    parser.add_argument("--alert-duration-sec", type=float, default=1.5, help="Violation duration before alert/history emission")
-    parser.add_argument("--loop-video", action="store_true", help="Loop the configured video source when it reaches EOF")
+    parser.add_argument("--max-frames", type=int, default=defaults["max_frames"], help="Maximum frames to process")
+    parser.add_argument("--save-video", action=argparse.BooleanOptionalAction, default=bool(defaults["save_video"]), help="Save annotated output video")
+    parser.add_argument("--start-sec", type=float, default=float(defaults["start_sec"]), help="Start time in seconds")
+    parser.add_argument("--end-sec", type=float, default=defaults["end_sec"], help="End time in seconds")
+    parser.add_argument("--realtime-logs", action=argparse.BooleanOptionalAction, default=bool(defaults["realtime_logs"]), help="Write AI/device serial-style logs")
+    parser.add_argument("--snapshot-every", type=int, default=int(defaults["snapshot_every"]), help="Save latest frame every N processed frames")
+    parser.add_argument("--event-cooldown-sec", type=float, default=float(defaults["event_cooldown_sec"]), help="Minimum seconds between repeated events")
+    parser.add_argument("--live-frame-width", type=int, default=defaults["live_frame_width"], help="Resize latest live frame to this width")
+    parser.add_argument("--inference-every", type=int, default=int(defaults["inference_every"]), help="Run YOLO every N frames and reuse stable overlay between runs")
+    parser.add_argument("--person-conf", type=float, default=float(defaults["person_conf"]), help="Person detector confidence threshold")
+    parser.add_argument("--ppe-conf", type=float, default=float(defaults["ppe_conf"]), help="PPE detector confidence threshold")
+    parser.add_argument("--smoothing-window", type=int, default=int(defaults["smoothing_window"]), help="Temporal voting window per tracked person")
+    parser.add_argument("--no-helmet-confirm-frames", type=int, default=int(defaults["no_helmet_confirm_frames"]), help="Frames needed to confirm no-helmet state")
+    parser.add_argument("--risk-alpha", type=float, default=float(defaults["risk_alpha"]), help="EMA alpha for smoothed track risk")
+    parser.add_argument("--alert-duration-sec", type=float, default=float(defaults["alert_duration_sec"]), help="Violation duration before alert/history emission")
+    parser.add_argument("--loop-video", action=argparse.BooleanOptionalAction, default=bool(defaults["loop_video"]), help="Loop the configured video source when it reaches EOF")
     return parser.parse_args()
 
 

@@ -16,6 +16,7 @@ from backend.services.output_reader import (
     write_json,
     read_json,
 )
+from src.configs.runtime_settings import dashboard_worker_settings
 from src.iot.device_simulator import ESP32RelaySimulator
 
 
@@ -130,7 +131,35 @@ def _stop_other_cameras(camera_id: str, statuses: dict[str, dict]) -> None:
                 ESP32RelaySimulator().reset_camera(other_id)
 
 
-def start_camera(camera_id: str, max_frames: int = 0) -> dict:
+def _append_worker_options(command: list[str], options: dict) -> None:
+    flag_map = {
+        "start_sec": "--start-sec",
+        "end_sec": "--end-sec",
+        "snapshot_every": "--snapshot-every",
+        "event_cooldown_sec": "--event-cooldown-sec",
+        "live_frame_width": "--live-frame-width",
+        "inference_every": "--inference-every",
+        "person_conf": "--person-conf",
+        "ppe_conf": "--ppe-conf",
+        "smoothing_window": "--smoothing-window",
+        "no_helmet_confirm_frames": "--no-helmet-confirm-frames",
+        "risk_alpha": "--risk-alpha",
+        "alert_duration_sec": "--alert-duration-sec",
+    }
+    for key, flag in flag_map.items():
+        value = options.get(key)
+        if value is not None:
+            command.extend([flag, str(value)])
+
+    if options.get("save_video"):
+        command.append("--save-video")
+    if options.get("realtime_logs"):
+        command.append("--realtime-logs")
+    if options.get("loop_video"):
+        command.append("--loop-video")
+
+
+def start_camera(camera_id: str, max_frames: int | None = None) -> dict:
     if camera_id not in CAMERAS:
         raise ValueError(f"Unsupported camera: {camera_id}")
     if camera_id not in load_video_sources():
@@ -142,6 +171,9 @@ def start_camera(camera_id: str, max_frames: int = 0) -> dict:
         return get_camera_status(camera_id)
 
     _stop_other_cameras(camera_id, statuses)
+    options = dashboard_worker_settings()
+    effective_max_frames = options.get("max_frames") if max_frames is None else max_frames
+
     command = [
         sys.executable,
         "-u",
@@ -149,26 +181,10 @@ def start_camera(camera_id: str, max_frames: int = 0) -> dict:
         "src.demo.run_cctv_demo",
         "--camera",
         camera_id,
-        "--save-video",
-        "--realtime-logs",
-        "--snapshot-every",
-        "3",
-        "--live-frame-width",
-        "960",
-        "--inference-every",
-        "2",
-        "--smoothing-window",
-        "12",
-        "--no-helmet-confirm-frames",
-        "6",
-        "--risk-alpha",
-        "0.85",
-        "--alert-duration-sec",
-        "1.5",
-        "--loop-video",
     ]
-    if max_frames and max_frames > 0:
-        command.extend(["--max-frames", str(max_frames)])
+    _append_worker_options(command, options)
+    if effective_max_frames and effective_max_frames > 0:
+        command.extend(["--max-frames", str(effective_max_frames)])
 
     WORKER_LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_file = (WORKER_LOG_DIR / f"{camera_id}_worker.log").open("a", encoding="utf-8")
@@ -186,12 +202,12 @@ def start_camera(camera_id: str, max_frames: int = 0) -> dict:
     return get_camera_status(camera_id)
 
 
-def restart_camera(camera_id: str, max_frames: int = 0) -> dict:
+def restart_camera(camera_id: str, max_frames: int | None = None) -> dict:
     stop_camera(camera_id)
     return start_camera(camera_id, max_frames=max_frames)
 
 
-def activate_camera(camera_id: str, max_frames: int = 0) -> dict:
+def activate_camera(camera_id: str, max_frames: int | None = None) -> dict:
     if camera_id not in CAMERAS:
         raise ValueError(f"Unsupported camera: {camera_id}")
     statuses = get_all_camera_statuses()
