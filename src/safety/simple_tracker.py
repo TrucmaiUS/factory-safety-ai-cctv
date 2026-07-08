@@ -22,9 +22,15 @@ class TrackState:
 
 
 class CentroidTracker:
-    def __init__(self, max_distance: float = 90.0, max_missed_frames: int = 20) -> None:
+    def __init__(
+        self,
+        max_distance: float = 90.0,
+        max_missed_frames: int = 20,
+        min_iou: float = 0.05,
+    ) -> None:
         self.max_distance = max_distance
         self.max_missed_frames = max_missed_frames
+        self.min_iou = min_iou
         self.next_track_id = 1
         self.tracks: dict[int, TrackState] = {}
 
@@ -40,8 +46,10 @@ class CentroidTracker:
         for track_id, track in self.tracks.items():
             for det_idx, detection in enumerate(detections):
                 distance = self._distance(track.bottom_center, detection.bottom_center)
-                if distance <= self.max_distance:
-                    matches.append((distance, track_id, det_idx))
+                iou = self._iou(track.bbox, detection)
+                if distance <= self.max_distance or iou >= self.min_iou:
+                    score = distance - (iou * self.max_distance)
+                    matches.append((score, track_id, det_idx))
 
         for _, track_id, det_idx in sorted(matches, key=lambda item: item[0]):
             if track_id not in unmatched_track_ids or det_idx not in unmatched_detection_indices:
@@ -123,3 +131,15 @@ class CentroidTracker:
     @staticmethod
     def _distance(a: tuple[float, float], b: tuple[float, float]) -> float:
         return hypot(a[0] - b[0], a[1] - b[1])
+
+    @staticmethod
+    def _iou(a: DetectionBox, b: DetectionBox) -> float:
+        x1 = max(a.x1, b.x1)
+        y1 = max(a.y1, b.y1)
+        x2 = min(a.x2, b.x2)
+        y2 = min(a.y2, b.y2)
+        inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)
+        if inter <= 0:
+            return 0.0
+        union = a.area + b.area - inter
+        return inter / union if union > 0 else 0.0

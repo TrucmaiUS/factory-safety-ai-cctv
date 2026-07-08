@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { frameUrl, mjpegUrl } from "../api/client";
 
-export default function LiveMonitor({ cameraId, cameraName, refreshToken, isActive }) {
+export default function LiveMonitor({ cameraId, cameraName, refreshToken, isActive, isStarting = false }) {
   const [mjpegError, setMjpegError] = useState(false);
   const [displaySrc, setDisplaySrc] = useState("");
   const [fallbackReady, setFallbackReady] = useState(false);
@@ -30,6 +30,8 @@ export default function LiveMonitor({ cameraId, cameraName, refreshToken, isActi
   let body;
   if (!cameraId) {
     body = <div className="placeholder idle-badge">Choose a camera to activate monitoring.</div>;
+  } else if (isStarting) {
+    body = <div className="placeholder idle-badge">Starting camera. Loading model and waiting for the first live frame.</div>;
   } else if (!isActive) {
     body = <div className="placeholder idle-badge">Camera is idle. Select a camera to start MJPEG monitoring.</div>;
   } else if (!mjpegError) {
@@ -57,7 +59,7 @@ export default function LiveMonitor({ cameraId, cameraName, refreshToken, isActi
     <section className="panel live-panel">
       <div className="panel-title">
         <h2>Active Camera Monitor</h2>
-        <span>{cameraName} | {isActive ? "ACTIVE" : "IDLE"}</span>
+        <span>{cameraName} | {isActive || isStarting ? "ACTIVE" : "IDLE"}</span>
       </div>
       <div className="live-monitor">{body}</div>
     </section>

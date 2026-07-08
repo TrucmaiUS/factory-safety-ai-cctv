@@ -73,11 +73,17 @@ def clear_runtime_state(
 
     for path in LIVE_DIR.glob("*_latest_event.json"):
         path.unlink(missing_ok=True)
+    for path in LIVE_DIR.glob("*_person_status.json"):
+        path.unlink(missing_ok=True)
     if clear_live_frames:
         for path in LIVE_DIR.glob("*_latest.jpg"):
             path.unlink(missing_ok=True)
         for path in LIVE_DIR.glob("*_latest.tmp.jpg"):
             path.unlink(missing_ok=True)
+        for path in LIVE_DIR.glob("*_latest.jpg.*.tmp.jpg"):
+            path.unlink(missing_ok=True)
+    for path in LIVE_DIR.glob("*.json.*.json.tmp"):
+        path.unlink(missing_ok=True)
     if clear_demo_videos:
         for path in DEMO_VIDEO_DIR.glob("*_output.mp4"):
             path.unlink(missing_ok=True)

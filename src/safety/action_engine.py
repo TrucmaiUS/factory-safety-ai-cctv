@@ -27,6 +27,7 @@ class ActionEngine:
         zone_name: str | None = None,
         helmet_state: dict[str, Any] | None = None,
         bbox: Any | None = None,
+        snapshot_frame: Any | None = None,
     ) -> dict[str, Any]:
         actions = set(risk.get("actions", []))
         result = {
@@ -37,6 +38,12 @@ class ActionEngine:
         }
 
         event = None
+        snapshot_path = self.history_logger.save_snapshot(
+            camera_id=camera_id,
+            frame=snapshot_frame,
+            track_id=track.track_id if track else None,
+        ) if "save_history" in actions else None
+
         if "save_history" in actions:
             event = self.history_logger.log_event(
                 camera_id=camera_id,
@@ -45,6 +52,7 @@ class ActionEngine:
                 zone_name=zone_name,
                 helmet_state=helmet_state,
                 bbox=bbox,
+                snapshot_path=snapshot_path,
             )
             result["saved_history"] = True
 
@@ -56,6 +64,7 @@ class ActionEngine:
                 zone_name=zone_name,
                 helmet_state=helmet_state,
                 bbox=bbox,
+                snapshot_path=snapshot_path,
             )
             self.history_logger.write_latest_event(camera_id, latest_event)
 

@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Query
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
 
 from backend.services.output_reader import CAMERAS, read_latest_events, read_recent_events
 
 
 router = APIRouter(prefix="/api/events", tags=["events"])
+ROOT = Path(__file__).resolve().parents[2]
+SNAPSHOT_DIR = ROOT / "outputs" / "alert_snapshots"
 
 
 @router.get("/recent")
@@ -19,3 +24,12 @@ def recent_events(
 def latest_events(ttl_seconds: float = Query(default=30.0, ge=1.0, le=3600.0)) -> dict:
     latest = read_latest_events(ttl_seconds=ttl_seconds)
     return {camera_id: latest.get(camera_id) for camera_id in CAMERAS}
+
+
+@router.get("/snapshots/{filename}")
+def event_snapshot(filename: str) -> FileResponse:
+    base = SNAPSHOT_DIR.resolve()
+    path = (SNAPSHOT_DIR / filename).resolve()
+    if not path.exists() or path.parent != base:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+    return FileResponse(path, media_type="image/jpeg")

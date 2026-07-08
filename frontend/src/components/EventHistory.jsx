@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { API_BASE } from "../api/client";
 
 export default function EventHistory({ events, cameras }) {
   const [cameraFilter, setCameraFilter] = useState("all");
@@ -31,6 +32,7 @@ export default function EventHistory({ events, cameras }) {
         <table>
           <thead>
             <tr>
+              <th>Snapshot</th>
               <th>Time</th>
               <th>Camera</th>
               <th>Risk</th>
@@ -43,6 +45,17 @@ export default function EventHistory({ events, cameras }) {
           <tbody>
             {filtered.map((event, index) => (
               <tr key={`${event.timestamp}-${index}`}>
+                <td>
+                  {event.snapshot_url ? (
+                    <a href={`${API_BASE}${event.snapshot_url}`} target="_blank" rel="noreferrer">
+                      <img
+                        className="history-thumb"
+                        src={`${API_BASE}${event.snapshot_url}`}
+                        alt="alert snapshot"
+                      />
+                    </a>
+                  ) : "N/A"}
+                </td>
                 <td>{event.timestamp ? new Date(event.timestamp).toLocaleString() : "N/A"}</td>
                 <td>{event.camera_id}</td>
                 <td>{event.risk_score}</td>

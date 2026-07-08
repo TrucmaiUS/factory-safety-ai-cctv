@@ -53,7 +53,7 @@ def camera_status(camera_id: str) -> dict:
 
 
 @router.post("/{camera_id}/start")
-def start_camera(camera_id: str, max_frames: int = Query(default=3000, ge=1, le=200000)) -> dict:
+def start_camera(camera_id: str, max_frames: int = Query(default=0, ge=0, le=200000)) -> dict:
     try:
         return process_manager.start_camera(camera_id, max_frames=max_frames)
     except ValueError as exc:
@@ -69,7 +69,7 @@ def stop_camera(camera_id: str) -> dict:
 
 
 @router.post("/{camera_id}/restart")
-def restart_camera(camera_id: str, max_frames: int = Query(default=3000, ge=1, le=200000)) -> dict:
+def restart_camera(camera_id: str, max_frames: int = Query(default=0, ge=0, le=200000)) -> dict:
     try:
         return process_manager.restart_camera(camera_id, max_frames=max_frames)
     except ValueError as exc:
@@ -77,7 +77,7 @@ def restart_camera(camera_id: str, max_frames: int = Query(default=3000, ge=1, l
 
 
 @router.post("/{camera_id}/activate")
-def activate_camera(camera_id: str, max_frames: int = Query(default=3000, ge=1, le=200000)) -> dict:
+def activate_camera(camera_id: str, max_frames: int = Query(default=0, ge=0, le=200000)) -> dict:
     try:
         return process_manager.activate_camera(camera_id, max_frames=max_frames)
     except ValueError as exc:

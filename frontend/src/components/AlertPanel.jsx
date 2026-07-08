@@ -8,7 +8,8 @@ export default function AlertPanel({ event }) {
     );
   }
 
-  const title = event.is_fresh ? "Current Alert" : "Last Event";
+  const title = event.is_fresh ? "Current Decision" : "Last Event";
+  const details = event.details || {};
   return (
     <section className={`panel alert-panel severity-${event.severity}`}>
       <div className="panel-title">
@@ -20,12 +21,20 @@ export default function AlertPanel({ event }) {
         <span>{String(event.severity).toUpperCase()}</span>
       </div>
       <dl className="trace">
+        <dt>Camera</dt>
+        <dd>{event.camera_id ?? "N/A"}</dd>
+        <dt>Person ID</dt>
+        <dd>{event.track_id ?? "N/A"}</dd>
+        <dt>Event State</dt>
+        <dd>{details.event_state ?? "N/A"}</dd>
+        <dt>Violation</dt>
+        <dd>{details.violation_type ?? "N/A"}</dd>
+        <dt>Duration</dt>
+        <dd>{details.violation_duration_seconds ?? 0}s</dd>
         <dt>Reasons</dt>
         <dd>{(event.reasons || []).join(", ") || "none"}</dd>
         <dt>Actions</dt>
         <dd>{(event.actions || []).join(", ") || "none"}</dd>
-        <dt>Track</dt>
-        <dd>{event.track_id ?? "N/A"}</dd>
         <dt>Zone</dt>
         <dd>{event.zone_name ?? "N/A"}</dd>
         <dt>Helmet State</dt>

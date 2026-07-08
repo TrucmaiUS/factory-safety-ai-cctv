@@ -7,6 +7,7 @@ from backend.services.output_reader import (
     CAMERAS,
     read_device_status,
     read_latest_events,
+    read_person_status,
     read_serial_tail,
     utc_now,
 )
@@ -23,8 +24,9 @@ def build_dashboard_payload() -> dict:
             camera_id: {
                 "status": statuses[camera_id]["status"],
                 "pid": statuses[camera_id].get("pid"),
-                "latest_event": latest_events.get(camera_id),
-                "latest_frame_url": f"/api/cameras/{camera_id}/frame?ts={utc_now()}",
+                        "latest_event": latest_events.get(camera_id),
+                        "person_status": read_person_status(camera_id),
+                        "latest_frame_url": f"/api/cameras/{camera_id}/frame?ts={utc_now()}",
             }
             for camera_id in CAMERAS
         },

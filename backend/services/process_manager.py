@@ -22,6 +22,7 @@ from src.iot.device_simulator import ESP32RelaySimulator
 ROOT = Path(__file__).resolve().parents[2]
 STATUS_PATH = CONTROL_DIR / "camera_process_status.json"
 ACTIVE_CAMERA_PATH = CONTROL_DIR / "active_camera.json"
+WORKER_LOG_DIR = ROOT / "outputs" / "worker_logs"
 
 
 def default_statuses() -> dict[str, dict]:
@@ -109,6 +110,7 @@ def stop_camera(camera_id: str) -> dict:
     _terminate_pid(statuses[camera_id].get("pid"))
     statuses[camera_id] = {"status": "IDLE", "pid": None, "last_update": utc_now()}
     _write_statuses(statuses)
+    _clear_camera_live_outputs(camera_id)
     if not any(status.get("status") == "ACTIVE" for status in statuses.values()):
         _write_active_camera(None)
     if camera_id in {"camera_1", "camera_2"}:
@@ -123,11 +125,12 @@ def _stop_other_cameras(camera_id: str, statuses: dict[str, dict]) -> None:
         if status.get("status") == "ACTIVE":
             _terminate_pid(status.get("pid"))
             statuses[other_id] = {"status": "IDLE", "pid": None, "last_update": utc_now()}
+            _clear_camera_live_outputs(other_id)
             if other_id in {"camera_1", "camera_2"}:
                 ESP32RelaySimulator().reset_camera(other_id)
 
 
-def start_camera(camera_id: str, max_frames: int = 3000) -> dict:
+def start_camera(camera_id: str, max_frames: int = 0) -> dict:
     if camera_id not in CAMERAS:
         raise ValueError(f"Unsupported camera: {camera_id}")
     if camera_id not in load_video_sources():
@@ -141,38 +144,54 @@ def start_camera(camera_id: str, max_frames: int = 3000) -> dict:
     _stop_other_cameras(camera_id, statuses)
     command = [
         sys.executable,
+        "-u",
         "-m",
         "src.demo.run_cctv_demo",
         "--camera",
         camera_id,
-        "--max-frames",
-        str(max_frames),
         "--save-video",
         "--realtime-logs",
         "--snapshot-every",
         "3",
         "--live-frame-width",
         "960",
+        "--inference-every",
+        "2",
+        "--smoothing-window",
+        "12",
+        "--no-helmet-confirm-frames",
+        "6",
+        "--risk-alpha",
+        "0.85",
+        "--alert-duration-sec",
+        "1.5",
+        "--loop-video",
     ]
+    if max_frames and max_frames > 0:
+        command.extend(["--max-frames", str(max_frames)])
+
+    WORKER_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_file = (WORKER_LOG_DIR / f"{camera_id}_worker.log").open("a", encoding="utf-8")
     process = subprocess.Popen(
         command,
         cwd=str(ROOT),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=log_file,
+        stderr=log_file,
         creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
+    log_file.close()
     statuses[camera_id] = {"status": "ACTIVE", "pid": process.pid, "last_update": utc_now()}
     _write_statuses(statuses)
     _write_active_camera(camera_id)
     return get_camera_status(camera_id)
 
 
-def restart_camera(camera_id: str, max_frames: int = 3000) -> dict:
+def restart_camera(camera_id: str, max_frames: int = 0) -> dict:
     stop_camera(camera_id)
     return start_camera(camera_id, max_frames=max_frames)
 
 
-def activate_camera(camera_id: str, max_frames: int = 3000) -> dict:
+def activate_camera(camera_id: str, max_frames: int = 0) -> dict:
     if camera_id not in CAMERAS:
         raise ValueError(f"Unsupported camera: {camera_id}")
     statuses = get_all_camera_statuses()

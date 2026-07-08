@@ -26,29 +26,49 @@ def _clip_text(text: str, max_len: int = 82) -> str:
 def draw_person_bbox(frame: np.ndarray, track: TrackState, risk: dict, helmet_state: dict | None) -> None:
     bbox = track.bbox
     severity = risk.get("severity", "normal")
+    details = risk.get("details", {})
     color = SEVERITY_COLORS.get(severity, (255, 255, 255))
     x1, y1, x2, y2 = [int(v) for v in [bbox.x1, bbox.y1, bbox.x2, bbox.y2]]
 
-    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
-    cv2.circle(frame, (int(track.bottom_center[0]), int(track.bottom_center[1])), 6, color, -1)
+    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 4)
+    cv2.circle(frame, (int(track.bottom_center[0]), int(track.bottom_center[1])), 8, color, -1)
 
-    ppe_label = ""
-    if helmet_state:
+    stable_ppe = details.get("stable_ppe")
+    decision_status = details.get("decision_status", "SAFE")
+    if stable_ppe:
+        ppe_label = f" | {stable_ppe.upper()}"
+    elif helmet_state:
         if helmet_state.get("no_helmet"):
-            ppe_label = " | NO HELMET"
+            ppe_label = " | NO_HELMET"
         elif helmet_state.get("has_helmet"):
             ppe_label = " | HELMET"
         elif helmet_state.get("uncertain"):
-            ppe_label = " | PPE?"
+            ppe_label = " | UNKNOWN"
+        else:
+            ppe_label = ""
+    else:
+        ppe_label = ""
 
+    label = f"#{track.track_id}{ppe_label} | Risk:{risk.get('risk_score', 0)}"
+    label_y = max(34, y1 - 12)
+    label_scale = 0.9
+    label_thickness = 2
+    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, label_scale, label_thickness)
+    cv2.rectangle(
+        frame,
+        (x1, max(0, label_y - th - 10)),
+        (x1 + tw + 14, label_y + 8),
+        (0, 0, 0),
+        -1,
+    )
     cv2.putText(
         frame,
-        f"ID {track.track_id} | {severity.upper()} | {risk.get('risk_score', 0)}{ppe_label}",
-        (x1, max(24, y1 - 8)),
+        label,
+        (x1 + 7, label_y),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
+        label_scale,
         color,
-        2,
+        label_thickness,
         cv2.LINE_AA,
     )
 
@@ -65,15 +85,15 @@ def draw_ppe_boxes(frame: np.ndarray, ppe_detections: list[DetectionBox]) -> Non
             continue
 
         x1, y1, x2, y2 = [int(v) for v in [det.x1, det.y1, det.x2, det.y2]]
-        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
         cv2.putText(
             frame,
             label,
             (x1, max(18, y1 - 6)),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.55,
+            0.75,
             color,
-            2,
+            3,
             cv2.LINE_AA,
         )
 
@@ -85,37 +105,41 @@ def draw_panel(
     max_risk: dict,
     active_tracks: int,
 ) -> None:
-    panel_w = 760
-    panel_h = 190
-    x, y = 18, 18
-    overlay = frame.copy()
-    cv2.rectangle(overlay, (x, y), (x + panel_w, y + panel_h), (20, 20, 20), -1)
-    cv2.addWeighted(overlay, 0.72, frame, 0.28, 0, frame)
-
+    scale = max(1.0, min(3.2, frame.shape[1] / 1280.0))
     severity = max_risk.get("severity", "normal")
     score = max_risk.get("risk_score", 0)
-    reasons = _clip_text(", ".join(max_risk.get("reasons", [])) or "none")
-    actions = _clip_text(", ".join(max_risk.get("actions", [])) or "none")
     details = max_risk.get("details", {})
     no_helmet_count = details.get("no_helmet_count", 0)
     color = SEVERITY_COLORS.get(severity, (255, 255, 255))
+    line1 = f"{camera_id} | frame {frame_index} | tracks {active_tracks} | no_helmet {no_helmet_count}"
+    line2 = f"MAX RISK {score}/100 | {severity.upper()}"
+    line1_scale = 0.64 * scale
+    line2_scale = 0.82 * scale
+    line_thickness = max(2, int(round(2.0 * scale)))
+    line1_size, _ = cv2.getTextSize(line1, cv2.FONT_HERSHEY_SIMPLEX, line1_scale, line_thickness)
+    line2_size, _ = cv2.getTextSize(line2, cv2.FONT_HERSHEY_SIMPLEX, line2_scale, line_thickness)
+    panel_w = min(int(620 * scale), max(line1_size[0], line2_size[0]) + int(42 * scale))
+    panel_h = int(82 * scale)
+    x, y = int(18 * scale), int(18 * scale)
+    pad_x = int(20 * scale)
+    line_1_y = int(30 * scale)
+    line_2_y = int(62 * scale)
+    overlay = frame.copy()
+    cv2.rectangle(overlay, (x, y), (x + panel_w, y + panel_h), (20, 20, 20), -1)
+    cv2.addWeighted(overlay, 0.82, frame, 0.18, 0, frame)
 
-    lines = [
-        f"{camera_id} | frame {frame_index} | tracks {active_tracks} | no_helmet {no_helmet_count}",
-        f"risk: {score}/100 | alert: {severity.upper()}",
-        f"trace: {reasons}",
-        f"actions: {actions}",
-    ]
+    lines = [(line1, line1_scale), (line2, line2_scale)]
 
-    for i, text in enumerate(lines):
+    y_offsets = [line_1_y, line_2_y]
+    for i, (text, font_scale) in enumerate(lines):
         cv2.putText(
             frame,
             text,
-            (x + 16, y + 34 + i * 38),
+            (x + pad_x, y + y_offsets[i]),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.68,
+            font_scale,
             color if i == 1 else (245, 245, 245),
-            2,
+            line_thickness,
             cv2.LINE_AA,
         )
 

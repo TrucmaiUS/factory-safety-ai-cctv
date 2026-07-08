@@ -33,6 +33,27 @@ def severity_from_score(score: int, rules: dict[str, Any] | None = None) -> Seve
     return "critical"
 
 
+def score_limits(rules: dict[str, Any] | None = None) -> dict[str, int]:
+    rules = rules or load_risk_rules()
+    limits = rules.get("score_limits", {})
+    return {
+        "min_score": int(limits.get("min_score", 0)),
+        "max_score": int(limits.get("max_score", 100)),
+    }
+
+
+def decision_policy(rules: dict[str, Any] | None = None) -> dict[str, int]:
+    rules = rules or load_risk_rules()
+    policy = rules.get("decision_policy", {})
+    return {
+        "warning_min_score": int(policy.get("warning_min_score", 25)),
+        "violation_min_score": int(policy.get("violation_min_score", 50)),
+        "stable_violation_min_score": int(policy.get("stable_violation_min_score", 80)),
+        "combined_violation_score": int(policy.get("combined_violation_score", 100)),
+        "ppe_visibility_warning_score": int(policy.get("ppe_visibility_warning_score", 30)),
+    }
+
+
 def _camera_weights(camera_id: str, rules: dict[str, Any]) -> dict[str, int]:
     defaults = rules.get("default_weights", {})
     camera_weights = (
@@ -42,6 +63,14 @@ def _camera_weights(camera_id: str, rules: dict[str, Any]) -> dict[str, int]:
     )
     merged = {**defaults, **camera_weights}
     return {key: int(value) for key, value in merged.items()}
+
+
+def _weight(weights: dict[str, int], key: str, legacy_key: str | None = None) -> int:
+    if key in weights:
+        return weights[key]
+    if legacy_key and legacy_key in weights:
+        return weights[legacy_key]
+    return 0
 
 
 def _actions_for(camera_id: str, severity: Severity, rules: dict[str, Any]) -> list[str]:
@@ -91,16 +120,16 @@ def score_event(
         reasons.append("inside_danger_zone")
 
     if inside_danger_zone and total_inside_seconds >= danger_dwell_seconds:
-        risk_score += weights.get("stay_time_over_3s", 0)
-        reasons.append("stayed_in_zone_over_3s")
+        risk_score += _weight(weights, "stay_time_over_threshold", "stay_time_over_3s")
+        reasons.append(f"stayed_in_zone_over_{danger_dwell_seconds:g}s")
 
     if no_helmet:
         risk_score += weights.get("no_helmet", 0)
         reasons.append("no_helmet")
 
     if no_helmet and no_helmet_seconds >= no_helmet_dwell_seconds:
-        risk_score += weights.get("no_helmet_over_3s", 0)
-        reasons.append("no_helmet_over_3s")
+        risk_score += _weight(weights, "no_helmet_over_threshold", "no_helmet_over_3s")
+        reasons.append(f"no_helmet_over_{no_helmet_dwell_seconds:g}s")
 
     if no_helmet_count >= 2:
         risk_score += weights.get("multiple_no_helmet_bonus", 0)
@@ -114,7 +143,8 @@ def score_event(
         risk_score += weights.get("uncertain_detection_penalty", 0)
         reasons.append("uncertain_detection")
 
-    risk_score = max(0, min(100, risk_score))
+    limits = score_limits(rules)
+    risk_score = max(limits["min_score"], min(limits["max_score"], risk_score))
     severity = severity_from_score(risk_score, rules)
     actions = _actions_for(camera_id, severity, rules)
 

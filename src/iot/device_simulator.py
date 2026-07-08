@@ -1,9 +1,9 @@
 import json
-import os
 from pathlib import Path
 
 from src.iot.command_schema import DeviceAck, DeviceState, utc_now
 from src.iot.serial_logger import serial_log
+from src.utils.atomic_io import write_json_atomic
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -76,12 +76,7 @@ class ESP32RelaySimulator:
 
     def save_state(self) -> None:
         self.status_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp_path = self.status_path.with_suffix(".json.tmp")
-        with tmp_path.open("w", encoding="utf-8") as f:
-            json.dump(self.state, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp_path, self.status_path)
+        write_json_atomic(self.status_path, self.state)
 
     def reset_camera(self, camera_id: str) -> None:
         self.state[camera_id] = default_state()[camera_id]

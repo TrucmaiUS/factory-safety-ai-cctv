@@ -324,13 +324,20 @@ button:disabled {
   display: block;
 }
 
+.compact-device-row {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr repeat(3, auto);
+  align-items: center;
+  gap: 8px;
+}
+
 .indicator.on {
   background: #fee4e2;
   color: #b42318;
 }
 
 .serial-box {
-  min-height: 220px;
+  min-height: 120px;
   max-height: 360px;
   overflow: auto;
   background: #101411;
@@ -338,6 +345,11 @@ button:disabled {
   border-radius: 6px;
   padding: 14px;
   line-height: 1.5;
+}
+
+.serial-panel summary {
+  cursor: pointer;
+  font-weight: 800;
 }
 
 .system-actions {
@@ -363,6 +375,21 @@ table {
   min-width: 980px;
 }
 
+.compact-table-wrap {
+  overflow: auto;
+  margin-top: 10px;
+}
+
+.compact-table {
+  min-width: 620px;
+}
+
+.compact-table th,
+.compact-table td {
+  padding: 8px;
+  font-size: 13px;
+}
+
 th,
 td {
   border-bottom: 1px solid #e5e9e6;
@@ -380,6 +407,15 @@ th {
   width: 100%;
   margin-top: 14px;
   border-radius: 6px;
+}
+
+.history-thumb {
+  width: 120px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d5dbd6;
+  background: #edf1ee;
 }
 
 @media (max-width: 1100px) {
