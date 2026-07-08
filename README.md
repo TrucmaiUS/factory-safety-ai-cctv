@@ -151,6 +151,22 @@ Sau khi đổi config, restart camera hoặc restart backend để process mới
 
 ## Cách Chạy
 
+### Chuẩn Bị Model Và Video Demo
+
+Do file model và video có dung lượng lớn, repo không commit trực tiếp các file `.pt` và `.mp4`.
+
+Cần đặt file theo cấu trúc:
+
+```text
+model/
+├── person/yolov8s.pt
+└── ppe/yolo8s_ppe_best.pt
+
+video_source/
+├── camera_1/cam1.mp4
+├── camera_2/cam2.mp4
+└── camera_3/cam3.mp4
+
 ### 1. Cài Python dependencies
 
 ```powershell
