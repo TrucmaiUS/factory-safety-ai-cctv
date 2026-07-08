@@ -1,5 +1,5 @@
-/dataset
-/docs
+dataset/
+docs/
 
 *.zip
 
@@ -8,3 +8,7 @@
 *.pt
 
 __pycache__/
+
+.bin
+
+node_modules/

@@ -1,0 +1,32 @@
+{
+  "camera_1": {
+    "device_id": "ESP32_SIM_CAM1",
+    "camera_id": "camera_1",
+    "connection": "SIMULATED",
+    "relay": "OFF",
+    "buzzer": "OFF",
+    "warning_light": "OFF",
+    "last_command_id": null,
+    "last_update": null
+  },
+  "camera_2": {
+    "device_id": "ESP32_SIM_CAM2",
+    "camera_id": "camera_2",
+    "connection": "SIMULATED",
+    "relay": "OFF",
+    "buzzer": "OFF",
+    "warning_light": "OFF",
+    "last_command_id": null,
+    "last_update": null
+  },
+  "camera_3": {
+    "device_id": "UI_ONLY_CAM3",
+    "camera_id": "camera_3",
+    "connection": "SIMULATED",
+    "relay": "N/A",
+    "buzzer": "N/A",
+    "warning_light": "N/A",
+    "last_command_id": null,
+    "last_update": null
+  }
+}

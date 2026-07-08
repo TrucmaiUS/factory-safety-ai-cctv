@@ -1,0 +1,17 @@
+{
+  "camera_1": {
+    "status": "IDLE",
+    "pid": null,
+    "last_update": null
+  },
+  "camera_2": {
+    "status": "IDLE",
+    "pid": null,
+    "last_update": null
+  },
+  "camera_3": {
+    "status": "IDLE",
+    "pid": null,
+    "last_update": null
+  }
+}

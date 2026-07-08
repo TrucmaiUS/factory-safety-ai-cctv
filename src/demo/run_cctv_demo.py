@@ -1,14 +1,15 @@
 import argparse
+import os
 from pathlib import Path
 from typing import Any
 
 import cv2
 import yaml
 
-from src.device.relay_simulator import trigger
 from src.perception.detection_types import DetectionBox
 from src.perception.person_detector import PersonDetector
 from src.perception.ppe_detector import PPEDetector, is_head
+from src.safety.action_engine import ActionEngine
 from src.safety.helmet_matcher import count_unmatched_heads, match_helmet_to_person
 from src.safety.history_logger import HistoryLogger
 from src.safety.risk_scoring import score_event
@@ -20,6 +21,7 @@ from src.visualization.overlay import render_overlay
 ROOT = Path(__file__).resolve().parents[2]
 VIDEO_SOURCES_PATH = ROOT / "src" / "configs" / "video_sources.yaml"
 OUTPUT_VIDEO_DIR = ROOT / "outputs" / "demo_videos"
+LIVE_DIR = ROOT / "outputs" / "live"
 CAMERAS = ("camera_1", "camera_2", "camera_3")
 
 
@@ -62,11 +64,38 @@ def open_video_writer(output_path: Path, fps: float, width: int, height: int) ->
     return writer
 
 
+def save_latest_frame_atomic(
+    camera_id: str,
+    frame,
+    live_width: int | None = 960,
+    jpeg_quality: int = 82,
+) -> None:
+    LIVE_DIR.mkdir(parents=True, exist_ok=True)
+    output_frame = frame
+    if live_width and live_width > 0 and frame.shape[1] > live_width:
+        scale = live_width / frame.shape[1]
+        output_frame = cv2.resize(
+            frame,
+            (live_width, int(frame.shape[0] * scale)),
+            interpolation=cv2.INTER_AREA,
+        )
+
+    final_path = LIVE_DIR / f"{camera_id}_latest.jpg"
+    tmp_path = LIVE_DIR / f"{camera_id}_latest.tmp.jpg"
+    ok = cv2.imwrite(
+        str(tmp_path),
+        output_frame,
+        [cv2.IMWRITE_JPEG_QUALITY, int(jpeg_quality)],
+    )
+    if ok:
+        os.replace(tmp_path, final_path)
+
+
 def should_emit_alert(
     event_key: tuple[int | str | None, str],
     timestamp_seconds: float,
     last_alert_times: dict[tuple[int | str | None, str], float],
-    cooldown_seconds: float = 1.0,
+    cooldown_seconds: float,
 ) -> bool:
     last_time = last_alert_times.get(event_key)
     if last_time is not None and timestamp_seconds - last_time < cooldown_seconds:
@@ -88,12 +117,13 @@ def compact_helmet_state(state: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
-def maybe_log_and_trigger(
+def maybe_handle_action(
     camera_id: str,
     risk: dict[str, Any],
     timestamp_seconds: float,
-    history_logger: HistoryLogger,
+    action_engine: ActionEngine,
     last_alert_times: dict[tuple[int | str | None, str], float],
+    event_cooldown_sec: float,
     track: TrackState | None = None,
     zone_name: str | None = None,
     helmet_state: dict[str, Any] | None = None,
@@ -104,10 +134,10 @@ def maybe_log_and_trigger(
         return
 
     key = (event_key if event_key is not None else (track.track_id if track else None), risk["severity"])
-    if not should_emit_alert(key, timestamp_seconds, last_alert_times):
+    if not should_emit_alert(key, timestamp_seconds, last_alert_times, event_cooldown_sec):
         return
 
-    event = history_logger.log_event(
+    action_engine.handle_event(
         camera_id=camera_id,
         risk=risk,
         track=track,
@@ -115,7 +145,6 @@ def maybe_log_and_trigger(
         helmet_state=compact_helmet_state(helmet_state),
         bbox=bbox,
     )
-    trigger(camera_id, event)
 
 
 def run_demo(
@@ -124,6 +153,10 @@ def run_demo(
     save_video: bool,
     start_sec: float = 0.0,
     end_sec: float | None = None,
+    realtime_logs: bool = False,
+    snapshot_every: int = 5,
+    event_cooldown_sec: float = 2.0,
+    live_frame_width: int | None = 960,
 ) -> None:
     if camera_id not in CAMERAS:
         raise ValueError(f"Unsupported camera '{camera_id}'. Expected one of: {', '.join(CAMERAS)}")
@@ -155,12 +188,14 @@ def run_demo(
     ppe_detector = PPEDetector() if camera_uses_ppe(camera_id) else None
     tracker = CentroidTracker(max_distance=max(width, height) * 0.045, max_missed_frames=20)
     history_logger = HistoryLogger()
+    action_engine = ActionEngine(history_logger=history_logger, realtime_logs=realtime_logs)
     last_alert_times: dict[tuple[int | str | None, str], float] = {}
 
     writer = None
     output_path = OUTPUT_VIDEO_DIR / f"{camera_id}_output.mp4"
     if save_video:
         writer = open_video_writer(output_path, fps=fps, width=width, height=height)
+    LIVE_DIR.mkdir(parents=True, exist_ok=True)
 
     print(f"Running demo for {camera_id}")
     print(f"Video: {video_path}")
@@ -224,12 +259,13 @@ def run_demo(
                 )
                 track_risks.append((track, risk, helmet_state))
 
-                maybe_log_and_trigger(
+                maybe_handle_action(
                     camera_id=camera_id,
                     risk=risk,
                     timestamp_seconds=timestamp_seconds,
-                    history_logger=history_logger,
+                    action_engine=action_engine,
                     last_alert_times=last_alert_times,
+                    event_cooldown_sec=event_cooldown_sec,
                     track=track,
                     zone_name=zone_name,
                     helmet_state=helmet_state,
@@ -247,12 +283,13 @@ def run_demo(
                     )
                     frame_risks.append(risk)
                     head_bbox = next((det for det in ppe_detections if is_head(det.label)), None)
-                    maybe_log_and_trigger(
+                    maybe_handle_action(
                         camera_id=camera_id,
                         risk=risk,
                         timestamp_seconds=timestamp_seconds,
-                        history_logger=history_logger,
+                        action_engine=action_engine,
                         last_alert_times=last_alert_times,
+                        event_cooldown_sec=event_cooldown_sec,
                         bbox=head_bbox,
                         event_key="frame_no_helmet",
                     )
@@ -270,6 +307,9 @@ def run_demo(
 
             if writer:
                 writer.write(annotated)
+
+            if snapshot_every > 0 and processed_frames % snapshot_every == 0:
+                save_latest_frame_atomic(camera_id, annotated, live_width=live_frame_width)
 
             if processed_frames % 25 == 0:
                 print(
@@ -299,6 +339,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--save-video", action="store_true", help="Save annotated output video")
     parser.add_argument("--start-sec", type=float, default=0.0, help="Start time in seconds")
     parser.add_argument("--end-sec", type=float, default=None, help="End time in seconds")
+    parser.add_argument("--realtime-logs", action="store_true", help="Write AI/device serial-style logs")
+    parser.add_argument("--snapshot-every", type=int, default=5, help="Save latest frame every N processed frames")
+    parser.add_argument("--event-cooldown-sec", type=float, default=2.0, help="Minimum seconds between repeated events")
+    parser.add_argument("--live-frame-width", type=int, default=960, help="Resize latest live frame to this width")
     return parser.parse_args()
 
 
@@ -312,6 +356,10 @@ def main() -> None:
             save_video=args.save_video,
             start_sec=args.start_sec,
             end_sec=args.end_sec,
+            realtime_logs=args.realtime_logs,
+            snapshot_every=args.snapshot_every,
+            event_cooldown_sec=args.event_cooldown_sec,
+            live_frame_width=args.live_frame_width,
         )
 
 
