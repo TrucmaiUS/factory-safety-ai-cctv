@@ -5,6 +5,7 @@ from starlette.websockets import WebSocketState
 
 from backend.services.output_reader import (
     CAMERAS,
+    read_current_decision,
     read_device_status,
     read_latest_events,
     read_person_status,
@@ -24,9 +25,10 @@ def build_dashboard_payload() -> dict:
             camera_id: {
                 "status": statuses[camera_id]["status"],
                 "pid": statuses[camera_id].get("pid"),
-                        "latest_event": latest_events.get(camera_id),
-                        "person_status": read_person_status(camera_id),
-                        "latest_frame_url": f"/api/cameras/{camera_id}/frame?ts={utc_now()}",
+                "current_decision": read_current_decision(camera_id),
+                "latest_event": latest_events.get(camera_id),
+                "person_status": read_person_status(camera_id),
+                "latest_frame_url": f"/api/cameras/{camera_id}/frame?ts={utc_now()}",
             }
             for camera_id in CAMERAS
         },

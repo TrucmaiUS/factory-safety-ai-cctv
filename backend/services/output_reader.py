@@ -84,6 +84,10 @@ def latest_event_path(camera_id: str) -> Path:
     return LIVE_DIR / f"{camera_id}_latest_event.json"
 
 
+def current_decision_path(camera_id: str) -> Path:
+    return LIVE_DIR / f"{camera_id}_current_decision.json"
+
+
 def latest_frame_path(camera_id: str) -> Path:
     return LIVE_DIR / f"{camera_id}_latest.jpg"
 
@@ -98,6 +102,10 @@ def video_path(camera_id: str) -> Path:
 
 def read_latest_event(camera_id: str, ttl_seconds: float = 30.0) -> dict | None:
     return add_freshness(read_json(latest_event_path(camera_id), None), ttl_seconds)
+
+
+def read_current_decision(camera_id: str, ttl_seconds: float = 5.0) -> dict | None:
+    return add_freshness(read_json(current_decision_path(camera_id), None), ttl_seconds)
 
 
 def read_latest_events(ttl_seconds: float = 30.0) -> dict[str, dict | None]:

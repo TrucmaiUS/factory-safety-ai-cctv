@@ -1,0 +1,74 @@
+23:02:08.600 [AI] camera_2 | Risk 31/100 WARNING | person_detected
+23:02:09.752 [AI] camera_2 | Risk 80/100 CRITICAL | person_detected, inside_danger_zone, CRITICAL_STARTED
+23:02:09.759 [CMD] camera_2 -> ESP32_SIM_CAM2: RELAY=ON, BUZZER=ON, LIGHT=ON
+23:02:09.766 [ESP32_SIM_CAM2] ACK command cmd_f4746b081889
+23:02:09.770 [DEVICE] RELAY ON | BUZZER ON | WARNING LIGHT ON
+23:02:54.940 [SYSTEM] camera_2 reset to IDLE device state.
+23:03:35.425 [AI] camera_3 | Risk 31/100 WARNING | person_detected
+23:03:35.428 [UI] Camera 3 helmet-only warning; no relay command required.
+23:03:37.436 [AI] camera_3 | Risk 80/100 CRITICAL | person_detected, no_helmet, CRITICAL_STARTED
+23:03:37.439 [UI] Camera 3 helmet-only warning; no relay command required.
+23:03:50.715 [AI] camera_3 | Risk 0/100 NORMAL | person_detected, RESOLVED
+23:03:50.717 [UI] Camera 3 helmet-only warning; no relay command required.
+23:03:58.130 [AI] camera_3 | Risk 30/100 WARNING | person_detected, uncertain_detection, head_visible_ppe_warning
+23:03:58.134 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:08.302 [AI] camera_3 | Risk 80/100 CRITICAL | person_detected, no_helmet, uncertain_detection, CRITICAL_STARTED
+23:04:08.304 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:16.277 [AI] camera_3 | Risk 30/100 WARNING | person_detected, head_visible_ppe_warning
+23:04:16.280 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:26.082 [AI] camera_3 | Risk 30/100 WARNING | person_detected, head_visible_ppe_warning
+23:04:26.085 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:34.726 [AI] camera_3 | Risk 0/100 NORMAL | person_detected, head_visible_ppe_warning, RESOLVED
+23:04:34.729 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:34.786 [AI] camera_3 | Risk 30/100 WARNING | person_detected, head_visible_ppe_warning
+23:04:34.789 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:34.837 [AI] camera_3 | Risk 30/100 WARNING | person_detected, head_visible_ppe_warning
+23:04:34.839 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:36.181 [AI] camera_3 | Risk 49/100 WARNING | person_detected
+23:04:36.183 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:44.620 [AI] camera_3 | Risk 30/100 WARNING | person_detected, head_visible_ppe_warning
+23:04:44.623 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:50.619 [AI] camera_3 | Risk 80/100 CRITICAL | person_detected, no_helmet, CRITICAL_STARTED
+23:04:50.621 [UI] Camera 3 helmet-only warning; no relay command required.
+23:04:59.689 [AI] camera_3 | Risk 31/100 WARNING | person_detected
+23:04:59.693 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:01.556 [AI] camera_3 | Risk 100/100 CRITICAL | person_detected, no_helmet, multiple_no_helmet_persons, CRITICAL_STARTED
+23:05:01.558 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:07.342 [AI] camera_3 | Risk 0/100 NORMAL | person_detected, RESOLVED
+23:05:07.346 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:09.395 [AI] camera_3 | Risk 42/100 WARNING | person_detected
+23:05:09.398 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:14.058 [AI] camera_3 | Risk 0/100 NORMAL | person_detected, uncertain_detection, head_visible_ppe_warning, RESOLVED
+23:05:14.060 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:17.180 [AI] camera_3 | Risk 30/100 WARNING | person_detected, head_visible_ppe_warning
+23:05:17.184 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:17.897 [AI] camera_3 | Risk 31/100 WARNING | person_detected
+23:05:17.900 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:18.633 [AI] camera_3 | Risk 30/100 WARNING | person_detected, head_visible_ppe_warning
+23:05:18.636 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:19.817 [AI] camera_3 | Risk 80/100 CRITICAL | person_detected, no_helmet, CRITICAL_STARTED
+23:05:19.821 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:20.997 [AI] camera_3 | Risk 44/100 WARNING | person_detected
+23:05:21.000 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:22.302 [AI] camera_3 | Risk 100/100 CRITICAL | person_detected, no_helmet, multiple_no_helmet_persons, CRITICAL_STARTED
+23:05:22.304 [UI] Camera 3 helmet-only warning; no relay command required.
+23:05:22.376 [AI] camera_3 | Risk 100/100 CRITICAL | person_detected, no_helmet, multiple_no_helmet_persons, CRITICAL_STARTED
+23:05:22.379 [UI] Camera 3 helmet-only warning; no relay command required.
+23:06:58.249 [AI] camera_1 | Risk 30/100 WARNING | person_detected, uncertain_detection, head_visible_ppe_warning
+23:06:58.855 [AI] camera_1 | Risk 30/100 WARNING | person_detected, head_visible_ppe_warning
+23:08:25.577 [AI] camera_1 | Risk 29/100 WARNING | person_detected
+23:08:26.266 [AI] camera_1 | Risk 80/100 CRITICAL | person_detected, inside_danger_zone, CRITICAL_STARTED
+23:08:26.274 [CMD] camera_1 -> ESP32_SIM_CAM1: RELAY=ON, BUZZER=ON, LIGHT=ON
+23:08:26.284 [ESP32_SIM_CAM1] ACK command cmd_e2b6961a0745
+23:08:26.287 [DEVICE] RELAY ON | BUZZER ON | WARNING LIGHT ON
+23:10:24.805 [AI] camera_1 | Risk 29/100 WARNING | person_detected
+23:10:25.838 [AI] camera_1 | Risk 80/100 CRITICAL | person_detected, inside_danger_zone, CRITICAL_STARTED
+23:10:25.844 [CMD] camera_1 -> ESP32_SIM_CAM1: RELAY=ON, BUZZER=ON, LIGHT=ON
+23:10:25.852 [ESP32_SIM_CAM1] ACK command cmd_934fa3acd004
+23:10:25.857 [DEVICE] RELAY ON | BUZZER ON | WARNING LIGHT ON
+23:10:26.666 [AI] camera_1 | Risk 29/100 WARNING | person_detected
+23:10:27.637 [AI] camera_1 | Risk 80/100 CRITICAL | person_detected, inside_danger_zone, CRITICAL_STARTED
+23:10:27.645 [CMD] camera_1 -> ESP32_SIM_CAM1: RELAY=ON, BUZZER=ON, LIGHT=ON
+23:10:27.655 [ESP32_SIM_CAM1] ACK command cmd_009aaa9a7c23
+23:10:27.658 [DEVICE] RELAY ON | BUZZER ON | WARNING LIGHT ON
+23:10:41.958 [SYSTEM] camera_1 reset to IDLE device state.

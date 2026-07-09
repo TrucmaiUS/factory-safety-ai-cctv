@@ -2,16 +2,16 @@
   "camera_1": {
     "status": "IDLE",
     "pid": null,
-    "last_update": null
+    "last_update": "2026-07-09T16:10:41.939391+00:00"
   },
   "camera_2": {
     "status": "IDLE",
     "pid": null,
-    "last_update": null
+    "last_update": "2026-07-09T16:02:54.923039+00:00"
   },
   "camera_3": {
     "status": "IDLE",
     "pid": null,
-    "last_update": null
+    "last_update": "2026-07-09T16:05:29.995824+00:00"
   }
 }

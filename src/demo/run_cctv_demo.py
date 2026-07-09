@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +13,7 @@ from src.configs.runtime_settings import pipeline_settings, tracking_settings
 from src.safety.action_engine import ActionEngine
 from src.safety.event_state_manager import EventStateManager
 from src.safety.helmet_matcher import count_unmatched_heads, match_helmet_to_person
-from src.safety.history_logger import HistoryLogger, write_person_status
+from src.safety.history_logger import HistoryLogger, write_current_decision, write_person_status
 from src.safety.rule_engine import RuleEngine
 from src.safety.risk_scoring import decision_policy, load_risk_rules, score_event
 from src.safety.simple_tracker import CentroidTracker, TrackState
@@ -32,6 +33,10 @@ VIDEO_SOURCES_PATH = ROOT / "src" / "configs" / "video_sources.yaml"
 OUTPUT_VIDEO_DIR = ROOT / "outputs" / "demo_videos"
 LIVE_DIR = ROOT / "outputs" / "live"
 CAMERAS = ("camera_1", "camera_2", "camera_3")
+WARNING_SNAPSHOT_COOLDOWN_SEC = 2.0
+ELEVATED_LOG_SEVERITIES = {"warning", "high", "critical"}
+DEVICE_ACTIONS = {"relay_on", "buzzer_on", "warning_light_on"}
+SEVERITY_RANK = {"normal": 0, "warning": 1, "high": 2, "critical": 3}
 
 
 def load_video_sources() -> dict[str, Any]:
@@ -116,6 +121,86 @@ def should_emit_alert(
     return True
 
 
+def should_emit_elevated_snapshot(
+    person_key: tuple[str, int | str | None],
+    severity: str,
+    timestamp_seconds: float,
+    last_elevated_logs: dict[tuple[str, int | str | None], dict[str, Any]],
+    cooldown_seconds: float = WARNING_SNAPSHOT_COOLDOWN_SEC,
+) -> bool:
+    if severity in ELEVATED_LOG_SEVERITIES:
+        last_log = last_elevated_logs.get(person_key)
+        if last_log is not None:
+            last_time = float(last_log.get("timestamp_seconds", 0.0))
+            elapsed_since_last_log = timestamp_seconds - last_time
+            if 0 <= elapsed_since_last_log <= cooldown_seconds:
+                last_severity = str(last_log.get("severity", "normal"))
+                severity_escalated = SEVERITY_RANK.get(severity, 0) > SEVERITY_RANK.get(last_severity, 0)
+                if not severity_escalated:
+                    return False
+
+    return True
+
+
+def build_live_decision(
+    camera_id: str,
+    frame_index: int,
+    timestamp_seconds: float,
+    track_risks: list[tuple[TrackState, dict[str, Any], dict[str, Any] | None]],
+    frame_risks: list[dict[str, Any]],
+    zone_name: str | None,
+) -> dict[str, Any] | None:
+    candidates: list[dict[str, Any]] = []
+    for track, risk, helmet_state in track_risks:
+        candidates.append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "camera_id": camera_id,
+                "frame_index": frame_index,
+                "video_timestamp_seconds": round(timestamp_seconds, 3),
+                "track_id": track.track_id,
+                "risk_score": risk.get("risk_score", 0),
+                "severity": risk.get("severity", "normal"),
+                "reasons": risk.get("reasons", []),
+                "actions": risk.get("actions", []),
+                "details": risk.get("details", {}),
+                "bbox": [track.bbox.x1, track.bbox.y1, track.bbox.x2, track.bbox.y2],
+                "zone_name": zone_name,
+                "helmet_state": compact_helmet_state(helmet_state),
+            }
+        )
+
+    for risk in frame_risks:
+        candidates.append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "camera_id": camera_id,
+                "frame_index": frame_index,
+                "video_timestamp_seconds": round(timestamp_seconds, 3),
+                "track_id": None,
+                "risk_score": risk.get("risk_score", 0),
+                "severity": risk.get("severity", "normal"),
+                "reasons": risk.get("reasons", []),
+                "actions": risk.get("actions", []),
+                "details": risk.get("details", {}),
+                "bbox": None,
+                "zone_name": zone_name,
+                "helmet_state": None,
+            }
+        )
+
+    if not candidates:
+        return None
+
+    return max(
+        candidates,
+        key=lambda item: (
+            SEVERITY_RANK.get(str(item.get("severity", "normal")), 0),
+            int(item.get("risk_score", 0)),
+        ),
+    )
+
+
 def compact_helmet_state(state: dict[str, Any] | None) -> dict[str, Any] | None:
     if not state:
         return None
@@ -151,6 +236,13 @@ def promote_ppe_visibility_warning(
     promoted["risk_score"] = max(int(promoted.get("risk_score", 0)), int(ppe_warning_score))
     if promoted.get("severity") == "normal":
         promoted["severity"] = "warning"
+        promoted["actions"] = list(
+            load_risk_rules()
+            .get("camera_rules", {})
+            .get(camera_id, {})
+            .get("actions", {})
+            .get("warning", [])
+        )
     promoted["details"].update(
         {
             "ppe_warning": True,
@@ -167,27 +259,57 @@ def maybe_handle_action(
     timestamp_seconds: float,
     action_engine: ActionEngine,
     last_alert_times: dict[tuple[int | str | None, str], float],
+    last_elevated_logs: dict[tuple[str, int | str | None], dict[str, Any]],
     event_cooldown_sec: float,
     track: TrackState | None = None,
     zone_name: str | None = None,
+    zone_points: list[list[int]] | None = None,
     helmet_state: dict[str, Any] | None = None,
     bbox: DetectionBox | None = None,
     event_key: int | str | None = None,
     snapshot_frame=None,
     force_history: bool = False,
 ) -> None:
-    if not force_history and ("save_history" not in risk.get("actions", []) or risk.get("severity") == "normal"):
+    actions = list(risk.get("actions", []))
+    if not force_history and ("save_history" not in actions or risk.get("severity") == "normal"):
         return
 
+    person_key = (camera_id, track.track_id if track else event_key)
+    elevated_allowed = should_emit_elevated_snapshot(
+        person_key,
+        str(risk.get("severity", "normal")),
+        timestamp_seconds,
+        last_elevated_logs,
+    )
+
     key = (event_key if event_key is not None else (track.track_id if track else None), risk["severity"])
-    if not should_emit_alert(key, timestamp_seconds, last_alert_times, event_cooldown_sec):
+    alert_allowed = (
+        should_emit_alert(key, timestamp_seconds, last_alert_times, event_cooldown_sec)
+        if elevated_allowed
+        else False
+    )
+
+    should_save_history = elevated_allowed and alert_allowed
+
+    if not should_save_history and not (set(actions) & DEVICE_ACTIONS):
         return
+
+    if should_save_history and risk.get("severity") in ELEVATED_LOG_SEVERITIES:
+        last_elevated_logs[person_key] = {
+            "timestamp_seconds": timestamp_seconds,
+            "severity": str(risk.get("severity", "normal")),
+        }
+
+    risk_for_action = risk
+    if not should_save_history:
+        risk_for_action = {**risk, "actions": [action for action in actions if action != "save_history"]}
 
     action_engine.handle_event(
         camera_id=camera_id,
-        risk=risk,
+        risk=risk_for_action,
         track=track,
         zone_name=zone_name,
+        zone_points=zone_points,
         helmet_state=compact_helmet_state(helmet_state),
         bbox=bbox,
         snapshot_frame=snapshot_frame,
@@ -298,6 +420,7 @@ def run_demo(
         ongoing_cooldown_seconds=max(float(tracking["event_ongoing_cooldown_min_sec"]), event_cooldown_sec)
     )
     last_alert_times: dict[tuple[int | str | None, str], float] = {}
+    last_elevated_logs: dict[tuple[str, int | str | None], dict[str, Any]] = {}
 
     writer = None
     output_path = OUTPUT_VIDEO_DIR / f"{camera_id}_output.mp4"
@@ -459,6 +582,23 @@ def run_demo(
                         }
                     )
 
+                    if risk.get("severity") == "warning":
+                        maybe_handle_action(
+                            camera_id=camera_id,
+                            risk=risk,
+                            timestamp_seconds=timestamp_seconds,
+                            action_engine=action_engine,
+                            last_alert_times=last_alert_times,
+                            last_elevated_logs=last_elevated_logs,
+                            event_cooldown_sec=WARNING_SNAPSHOT_COOLDOWN_SEC,
+                            track=track,
+                            zone_name=zone_name,
+                            zone_points=zone_points,
+                            helmet_state=helmet_state,
+                            event_key=f"{track.track_id}:warning_snapshot",
+                            snapshot_frame=frame,
+                        )
+
                     for violation_type, is_active in (
                         ("danger_zone", decision.stable_inside_zone),
                         ("no_helmet", decision.no_helmet),
@@ -493,9 +633,11 @@ def run_demo(
                             timestamp_seconds=timestamp_seconds,
                             action_engine=action_engine,
                             last_alert_times=last_alert_times,
+                            last_elevated_logs=last_elevated_logs,
                             event_cooldown_sec=0.0,
                             track=track,
                             zone_name=zone_name,
+                            zone_points=zone_points,
                             helmet_state=helmet_state,
                             event_key=f"{track.track_id}:{violation_type}:{event_state}",
                             snapshot_frame=frame,
@@ -520,7 +662,9 @@ def run_demo(
                             timestamp_seconds=timestamp_seconds,
                             action_engine=action_engine,
                             last_alert_times=last_alert_times,
+                            last_elevated_logs=last_elevated_logs,
                             event_cooldown_sec=event_cooldown_sec,
+                            zone_points=zone_points,
                             bbox=head_bbox,
                             event_key="frame_no_helmet",
                             snapshot_frame=frame,
@@ -530,6 +674,17 @@ def run_demo(
                 cached_track_risks = track_risks
                 cached_ppe_detections = ppe_detections
                 cached_frame_risks = frame_risks
+                write_current_decision(
+                    camera_id,
+                    build_live_decision(
+                        camera_id=camera_id,
+                        frame_index=frame_index,
+                        timestamp_seconds=timestamp_seconds,
+                        track_risks=track_risks,
+                        frame_risks=frame_risks,
+                        zone_name=zone_name,
+                    ),
+                )
                 write_person_status(
                     camera_id,
                     {

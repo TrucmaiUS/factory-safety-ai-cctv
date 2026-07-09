@@ -25,6 +25,7 @@ class ActionEngine:
         risk: dict[str, Any],
         track: TrackState | None = None,
         zone_name: str | None = None,
+        zone_points: list[list[int]] | None = None,
         helmet_state: dict[str, Any] | None = None,
         bbox: Any | None = None,
         snapshot_frame: Any | None = None,
@@ -42,6 +43,12 @@ class ActionEngine:
             camera_id=camera_id,
             frame=snapshot_frame,
             track_id=track.track_id if track else None,
+            risk=risk,
+            track=track,
+            helmet_state=helmet_state,
+            bbox=bbox,
+            zone_points=zone_points,
+            zone_name=zone_name,
         ) if "save_history" in actions else None
 
         if "save_history" in actions:

@@ -8,6 +8,7 @@ import psutil
 from backend.services.output_reader import (
     CAMERAS,
     CONTROL_DIR,
+    current_decision_path,
     latest_event_path,
     latest_frame_path,
     load_video_sources,
@@ -101,6 +102,7 @@ def _write_active_camera(camera_id: str | None) -> None:
 
 def _clear_camera_live_outputs(camera_id: str) -> None:
     latest_event_path(camera_id).unlink(missing_ok=True)
+    current_decision_path(camera_id).unlink(missing_ok=True)
     latest_frame_path(camera_id).unlink(missing_ok=True)
 
 

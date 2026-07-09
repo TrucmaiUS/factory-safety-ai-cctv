@@ -7,7 +7,7 @@
     "buzzer": "OFF",
     "warning_light": "OFF",
     "last_command_id": null,
-    "last_update": null
+    "last_update": "2026-07-09T16:10:41.954152+00:00"
   },
   "camera_2": {
     "device_id": "ESP32_SIM_CAM2",
@@ -17,7 +17,7 @@
     "buzzer": "OFF",
     "warning_light": "OFF",
     "last_command_id": null,
-    "last_update": null
+    "last_update": "2026-07-09T16:02:54.936589+00:00"
   },
   "camera_3": {
     "device_id": "UI_ONLY_CAM3",

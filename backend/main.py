@@ -73,6 +73,8 @@ def clear_runtime_state(
 
     for path in LIVE_DIR.glob("*_latest_event.json"):
         path.unlink(missing_ok=True)
+    for path in LIVE_DIR.glob("*_current_decision.json"):
+        path.unlink(missing_ok=True)
     for path in LIVE_DIR.glob("*_person_status.json"):
         path.unlink(missing_ok=True)
     if clear_live_frames:

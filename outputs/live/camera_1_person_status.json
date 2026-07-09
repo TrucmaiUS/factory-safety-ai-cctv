@@ -1,0 +1,317 @@
+{
+  "camera_id": "camera_1",
+  "frame_index": 822,
+  "persons": [
+    {
+      "id": 7,
+      "camera_id": "camera_1",
+      "ppe_state": "helmet",
+      "zone_state": "OUTSIDE",
+      "risk": 0,
+      "severity": "normal",
+      "reasons": [
+        "person_detected"
+      ],
+      "actions": [],
+      "details": {
+        "camera_id": "camera_1",
+        "person_detected": true,
+        "inside_danger_zone": false,
+        "no_helmet": false,
+        "total_inside_seconds": 0.0,
+        "no_helmet_seconds": 0.0,
+        "no_helmet_count": 0,
+        "uncertain": false,
+        "stable_ppe": "helmet",
+        "stable_inside_zone": false,
+        "decision_status": "SAFE",
+        "violation_duration_seconds": 0.0,
+        "raw_ppe": "helmet",
+        "raw_inside_zone": false,
+        "ppe_votes": {
+          "unknown": 8,
+          "helmet": 4
+        },
+        "zone_votes": {
+          "inside": 0,
+          "outside": 12
+        }
+      },
+      "duration": 0.0,
+      "status": "SAFE"
+    },
+    {
+      "id": 8,
+      "camera_id": "camera_1",
+      "ppe_state": "helmet",
+      "zone_state": "OUTSIDE",
+      "risk": 0,
+      "severity": "normal",
+      "reasons": [
+        "person_detected"
+      ],
+      "actions": [],
+      "details": {
+        "camera_id": "camera_1",
+        "person_detected": true,
+        "inside_danger_zone": false,
+        "no_helmet": false,
+        "total_inside_seconds": 0.0,
+        "no_helmet_seconds": 0.0,
+        "no_helmet_count": 0,
+        "uncertain": false,
+        "stable_ppe": "helmet",
+        "stable_inside_zone": false,
+        "decision_status": "SAFE",
+        "violation_duration_seconds": 0.0,
+        "raw_ppe": "helmet",
+        "raw_inside_zone": false,
+        "ppe_votes": {
+          "helmet": 12
+        },
+        "zone_votes": {
+          "inside": 0,
+          "outside": 12
+        }
+      },
+      "duration": 0.0,
+      "status": "SAFE"
+    },
+    {
+      "id": 19,
+      "camera_id": "camera_1",
+      "ppe_state": "helmet",
+      "zone_state": "OUTSIDE",
+      "risk": 0,
+      "severity": "normal",
+      "reasons": [
+        "person_detected"
+      ],
+      "actions": [],
+      "details": {
+        "camera_id": "camera_1",
+        "person_detected": true,
+        "inside_danger_zone": false,
+        "no_helmet": false,
+        "total_inside_seconds": 0.0,
+        "no_helmet_seconds": 0.0,
+        "no_helmet_count": 0,
+        "uncertain": false,
+        "stable_ppe": "helmet",
+        "stable_inside_zone": false,
+        "decision_status": "SAFE",
+        "violation_duration_seconds": 0.0,
+        "raw_ppe": "helmet",
+        "raw_inside_zone": false,
+        "ppe_votes": {
+          "helmet": 12
+        },
+        "zone_votes": {
+          "inside": 0,
+          "outside": 12
+        }
+      },
+      "duration": 0.0,
+      "status": "SAFE"
+    },
+    {
+      "id": 26,
+      "camera_id": "camera_1",
+      "ppe_state": "helmet",
+      "zone_state": "IN_ZONE",
+      "risk": 80,
+      "severity": "critical",
+      "reasons": [
+        "person_detected",
+        "inside_danger_zone"
+      ],
+      "actions": [
+        "save_history",
+        "ui_warning",
+        "relay_on",
+        "buzzer_on",
+        "warning_light_on"
+      ],
+      "details": {
+        "camera_id": "camera_1",
+        "person_detected": true,
+        "inside_danger_zone": true,
+        "no_helmet": false,
+        "total_inside_seconds": 1.6,
+        "no_helmet_seconds": 0.0,
+        "no_helmet_count": 0,
+        "uncertain": false,
+        "stable_ppe": "helmet",
+        "stable_inside_zone": true,
+        "decision_status": "VIOLATION",
+        "violation_duration_seconds": 1.6,
+        "raw_ppe": "helmet",
+        "raw_inside_zone": true,
+        "ppe_votes": {
+          "helmet": 12
+        },
+        "zone_votes": {
+          "inside": 12,
+          "outside": 0
+        }
+      },
+      "duration": 1.6,
+      "status": "VIOLATION"
+    },
+    {
+      "id": 28,
+      "camera_id": "camera_1",
+      "ppe_state": "helmet",
+      "zone_state": "OUTSIDE",
+      "risk": 0,
+      "severity": "normal",
+      "reasons": [
+        "person_detected"
+      ],
+      "actions": [],
+      "details": {
+        "camera_id": "camera_1",
+        "person_detected": true,
+        "inside_danger_zone": false,
+        "no_helmet": false,
+        "total_inside_seconds": 0.0,
+        "no_helmet_seconds": 0.0,
+        "no_helmet_count": 0,
+        "uncertain": false,
+        "stable_ppe": "helmet",
+        "stable_inside_zone": false,
+        "decision_status": "SAFE",
+        "violation_duration_seconds": 0.0,
+        "raw_ppe": "helmet",
+        "raw_inside_zone": false,
+        "ppe_votes": {
+          "helmet": 12
+        },
+        "zone_votes": {
+          "inside": 0,
+          "outside": 12
+        }
+      },
+      "duration": 0.0,
+      "status": "SAFE"
+    },
+    {
+      "id": 30,
+      "camera_id": "camera_1",
+      "ppe_state": "helmet",
+      "zone_state": "IN_ZONE",
+      "risk": 80,
+      "severity": "critical",
+      "reasons": [
+        "person_detected",
+        "inside_danger_zone"
+      ],
+      "actions": [
+        "save_history",
+        "ui_warning",
+        "relay_on",
+        "buzzer_on",
+        "warning_light_on"
+      ],
+      "details": {
+        "camera_id": "camera_1",
+        "person_detected": true,
+        "inside_danger_zone": true,
+        "no_helmet": false,
+        "total_inside_seconds": 1.467,
+        "no_helmet_seconds": 0.0,
+        "no_helmet_count": 0,
+        "uncertain": false,
+        "stable_ppe": "helmet",
+        "stable_inside_zone": true,
+        "decision_status": "VIOLATION",
+        "violation_duration_seconds": 1.467,
+        "raw_ppe": "helmet",
+        "raw_inside_zone": true,
+        "ppe_votes": {
+          "helmet": 12
+        },
+        "zone_votes": {
+          "inside": 12,
+          "outside": 0
+        }
+      },
+      "duration": 1.47,
+      "status": "VIOLATION"
+    },
+    {
+      "id": 31,
+      "camera_id": "camera_1",
+      "ppe_state": "helmet",
+      "zone_state": "OUTSIDE",
+      "risk": 0,
+      "severity": "normal",
+      "reasons": [
+        "person_detected"
+      ],
+      "actions": [],
+      "details": {
+        "camera_id": "camera_1",
+        "person_detected": true,
+        "inside_danger_zone": false,
+        "no_helmet": false,
+        "total_inside_seconds": 0.0,
+        "no_helmet_seconds": 0.0,
+        "no_helmet_count": 0,
+        "uncertain": false,
+        "stable_ppe": "helmet",
+        "stable_inside_zone": false,
+        "decision_status": "SAFE",
+        "violation_duration_seconds": 0.0,
+        "raw_ppe": "helmet",
+        "raw_inside_zone": false,
+        "ppe_votes": {
+          "helmet": 9
+        },
+        "zone_votes": {
+          "inside": 0,
+          "outside": 9
+        }
+      },
+      "duration": 0.0,
+      "status": "SAFE"
+    },
+    {
+      "id": 32,
+      "camera_id": "camera_1",
+      "ppe_state": "unknown",
+      "zone_state": "OUTSIDE",
+      "risk": 0,
+      "severity": "normal",
+      "reasons": [
+        "person_detected"
+      ],
+      "actions": [],
+      "details": {
+        "camera_id": "camera_1",
+        "person_detected": true,
+        "inside_danger_zone": false,
+        "no_helmet": false,
+        "total_inside_seconds": 0.0,
+        "no_helmet_seconds": 0.0,
+        "no_helmet_count": 0,
+        "uncertain": false,
+        "stable_ppe": "unknown",
+        "stable_inside_zone": false,
+        "decision_status": "SAFE",
+        "violation_duration_seconds": 0.0,
+        "raw_ppe": "helmet",
+        "raw_inside_zone": false,
+        "ppe_votes": {
+          "helmet": 3
+        },
+        "zone_votes": {
+          "inside": 0,
+          "outside": 3
+        }
+      },
+      "duration": 0.0,
+      "status": "SAFE"
+    }
+  ]
+}

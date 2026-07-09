@@ -16,3 +16,7 @@ node_modules/
 *.jpg
 
 *.log
+
+tmp/
+
+dist/

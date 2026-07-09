@@ -140,9 +140,11 @@ export default function App() {
       if (payload.type !== "dashboard_update") return;
       setLive(payload);
       setRefreshToken(Date.now());
-      const selectedEvent = payload.cameras?.[selectedCameraRef.current]?.latest_event;
+      const selectedEvent =
+        payload.cameras?.[selectedCameraRef.current]?.current_decision ||
+        payload.cameras?.[selectedCameraRef.current]?.latest_event;
       if (!mutedRef.current && selectedEvent?.is_fresh && selectedEvent?.severity === "critical") {
-        const eventKey = selectedEvent.timestamp;
+        const eventKey = `${selectedEvent.timestamp}-${selectedEvent.frame_index ?? ""}-${selectedEvent.track_id ?? ""}`;
         if (eventKey && eventKey !== lastCriticalRef.current) {
           lastCriticalRef.current = eventKey;
           beep();
@@ -212,6 +214,7 @@ export default function App() {
               ...camera,
               status: id === cameraId ? res.data.status : "IDLE",
               pid: id === cameraId ? res.data.pid : null,
+              current_decision: id === cameraId ? camera.current_decision : null,
               latest_event: id === cameraId ? res.data.latest_event : null,
               person_status: id === cameraId ? camera.person_status : { camera_id: id, persons: [] }
             }
@@ -255,13 +258,16 @@ export default function App() {
   );
   const selectedLive = live.cameras?.[selectedCamera] || {};
   const selectedEvent = selectedLive.latest_event;
+  const selectedCurrentDecision = selectedLive.current_decision?.is_fresh ? selectedLive.current_decision : null;
   const selectedPersons = [...(selectedLive.person_status?.persons || [])].sort(comparePersonRisk);
   const highestRiskPerson = selectedPersons[0] || null;
-  const currentDecision = highestRiskPerson ? personToDecisionEvent(highestRiskPerson, selectedCamera) : selectedEvent;
+  const currentDecision =
+    selectedCurrentDecision ||
+    (highestRiskPerson ? personToDecisionEvent(highestRiskPerson, selectedCamera) : selectedEvent);
   const selectedIsActive = selectedLive.status === "ACTIVE";
   const selectedIsStarting = activatingCamera === selectedCamera;
   const activeAlerts = Object.values(live.cameras || {}).filter((camera) => {
-    const event = camera.latest_event;
+    const event = camera.current_decision?.is_fresh ? camera.current_decision : camera.latest_event;
     return event?.is_fresh && ["high", "critical"].includes(event?.severity);
   }).length;
   const criticalEvents = events.filter((event) => event.severity === "critical").length;
